@@ -1,0 +1,49 @@
+/* ===================== DJANGO ADMIN CUSTOM COLORS ===================== */
+
+/* Top header background */
+#header {
+    background-color: #004aad !important;
+}
+
+/* Top header text (site title) */
+#header h1, #header h1 a {
+    color: #004aad !important; /* replace Django white with your blue */
+}
+
+/* Sidebar background */
+#sidebar {
+    background-color: #004aad !important; /* only override sidebar bg */
+}
+
+/* Sidebar text / links */
+#sidebar a, #user-tools a {
+    color: #004aad !important; /* only override default Django link colors */
+}
+
+/* Module headers */
+.module h2 {
+    color: #004aad !important; /* original Django header text color replaced */
+}
+
+/* Table headers background & text */
+.change-list table th {
+    background-color: #004aad !important; /* header background */
+    color: #fff !important; /* contrast text */
+}
+
+/* Buttons (submit / normal) */
+input[type="submit"], button {
+    background-color: #004aad !important; /* only buttons background */
+    color: #fff !important;
+    border-color: #004aad !important;
+}
+
+/* Row hover text color (table) */
+.change-list tbody tr:hover {
+    color: #004aad !important; /* change hover text only */
+}
+
+/* Selected rows text */
+tr.selected, input:checked {
+    color: #004aad !important; /* selected row text */
+}

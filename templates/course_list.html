@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}All Courses{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+  <!-- ===================== PAGE HEADER ===================== -->
+  <h2 class="dashboard-title">All Courses</h2>
+  <p class="dashboard-subtitle">
+    Browse all available courses and start learning today.
+  </p>
+
+  <!-- ===================== COURSES GRID ===================== -->
+  <div class="courses-grid">
+    {% if courses %}
+      {% for course in courses %}
+      <div class="course-card course-horizontal">
+
+        <div class="top-row">
+          {% if course.thumbnail %}
+          <img
+            src="{{ course.thumbnail.url }}"
+            alt="{{ course.title }}"
+            class="course-image image-zoom-trigger"
+            data-zoom="zoom-course-{{ course.id }}"
+          />
+          {% else %}
+          <div class="course-image placeholder-image">📘 No Image</div>
+          {% endif %}
+
+          <div class="course-info">
+            <div class="header">
+              <h3>{{ course.title }}</h3>
+              {% if course.created_at %}
+              <p class="course-date">
+                Added {{ course.created_at|date:"M d, Y" }}
+              </p>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <div class="course-info bottom">
+          <p>{{ course.description|truncatewords:20 }}</p>
+
+          <div class="course-actions">
+            {% if user.is_authenticated %}
+            <a
+              href="{% url 'courses:course_detail' course.id %}"
+              class="btn-secondary-1"
+            >
+              View Course
+            </a>
+            {% else %}
+            <a
+              href="{% url 'accounts:login' %}?next={% url 'courses:course_detail' course.id %}"
+              class="btn-secondary-1"
+            >
+              Login to Enroll
+            </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- ===================== IMAGE ZOOM OVERLAY ===================== -->
+      {% if course.thumbnail %}
+      <div id="zoom-course-{{ course.id }}" class="img-zoom-overlay">
+        <img src="{{ course.thumbnail.url }}" alt="{{ course.title }}" />
+      </div>
+      {% endif %}
+
+      {% endfor %}
+    {% else %}
+    <p class="empty-state">No courses available at the moment.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block media_js %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  // IMAGE ZOOM TRIGGER
+  document.querySelectorAll(".image-zoom-trigger").forEach(img => {
+    img.addEventListener("click", () => {
+      const overlay = document.getElementById(img.dataset.zoom);
+      if (!overlay) return;
+      overlay.classList.add("active");
+      document.body.classList.add("image-expanded");
+    });
+  });
+
+  // CLOSE OVERLAY ON CLICK
+  document.querySelectorAll(".img-zoom-overlay").forEach(overlay => {
+    overlay.addEventListener("click", () => {
+      overlay.classList.remove("active");
+      document.body.classList.remove("image-expanded");
+    });
+  });
+});
+</script>
+{% endblock %}

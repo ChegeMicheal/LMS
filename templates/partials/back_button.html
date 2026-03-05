@@ -1,0 +1,12 @@
+<div class="floating-back-btn">
+    {% if previous_url %}
+    <a href="{{ previous_url }}" class="btn btn-outline-secondary">
+        ← Back
+    </a>
+    {% else %}
+    <button type="button" class="btn btn-outline-secondary"
+        onclick="history.length > 1 ? history.back() : window.location.href='{{ fallback_url|default:'#' }}'">
+        ← Back
+    </button>
+    {% endif %}
+</div>

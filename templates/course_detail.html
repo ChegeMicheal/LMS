@@ -1,0 +1,102 @@
+{% extends 'base.html' %} {% load static %} {% block title %}{{ course.title }}{% endblock %} 
+{% block content %}
+
+<section class="courses-section section-spacing">
+  <div class="dashboard-container">
+    <!-- ===================== COURSE HEADER ===================== -->
+    <div class="course-card course-horizontal">
+      <div class="top-row">
+        {% if course.thumbnail %}
+        <img
+          src="{{ course.thumbnail.url }}"
+          alt="{{ course.title }}"
+          class="course-image image-zoom-trigger"
+          data-zoom="zoom-course-{{ course.id }}"
+        />
+        {% else %}
+        <div class="course-image placeholder-image">📘 No Image</div>
+        {% endif %}
+
+        <div class="course-info">
+          <div class="header">
+            <h3>{{ course.title }}</h3>
+            {% if course.created_at %}
+            <p class="course-date">
+              Added {{ course.created_at|date:"M d, Y" }}
+            </p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="course-info bottom">
+        <p>{{ course.description }}</p>
+
+        <div class="course-actions">
+          <a href="{% url 'courses:course_list' %}" class="btn-secondary-1">
+            <i class="fas fa-arrow-left"></i>
+            Back to Courses
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== IMAGE ZOOM OVERLAY ===================== -->
+    {% if course.thumbnail %}
+    <div id="zoom-course-{{ course.id }}" class="img-zoom-overlay">
+      <img src="{{ course.thumbnail.url }}" alt="{{ course.title }}" />
+    </div>
+    {% endif %}
+
+    <!-- ===================== LESSONS ===================== -->
+    <div class="lessons-section fade-in">
+      {% if enrolled %}
+      <h3 class="section-title">Course Lessons</h3>
+
+      <div class="lessons-list">
+        <ul>
+          {% for lesson in lessons %}
+          <li>
+            <a
+              href="{% url 'courses:lesson_detail' course.id lesson.id %}"
+              class="lesson-item"
+            >
+              <span class="lesson-title">{{ lesson.title }}</span>
+            </a>
+          </li>
+          {% empty %}
+          <p class="empty-state">No lessons available yet.</p>
+          {% endfor %}
+        </ul>
+      </div>
+
+      {% else %}
+      <p class="empty-state">You are not enrolled in this course.</p>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+{% endblock %} {% block media_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    // IMAGE ZOOM TRIGGER (works for all thumbnails)
+    document.querySelectorAll(".image-zoom-trigger").forEach((img) => {
+      img.addEventListener("click", () => {
+        const overlay = document.getElementById(img.dataset.zoom);
+        if (!overlay) return;
+        overlay.classList.add("active");
+        document.body.classList.add("image-expanded");
+      });
+    });
+
+    // CLOSE OVERLAY ON CLICK
+    document.querySelectorAll(".img-zoom-overlay").forEach((overlay) => {
+      overlay.addEventListener("click", () => {
+        overlay.classList.remove("active");
+        document.body.classList.remove("image-expanded");
+      });
+    });
+  });
+</script>
+{% endblock %}

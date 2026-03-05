@@ -1,0 +1,35 @@
+{% extends 'base.html' %} {% block title %}{{ quiz.title }}{% endblock %} 
+{% block content %}
+<div class="quiz-results-container">
+  <h2 class="quiz-score">
+    {{ attempt.quiz.title }}
+    <span
+      class="score-badge {% if attempt.score >= 70 %}pass {% else %}fail {% endif %}"
+    >
+      {{ attempt.score }}%
+    </span>
+  </h2>
+
+  {% for q in questions %}
+  <div class="quiz-question result-question">
+    <p><strong>{{ forloop.counter }}. {{ q.question_text }}</strong></p>
+
+    {% for ans in q.answers %} {% if ans == q.correct_answer %}
+    <div class="answer correct-answer">{{ ans }} ✓</div>
+    {% elif ans == q.student_answer %}
+    <div class="answer wrong-answer">{{ ans }} ✗</div>
+    {% else %}
+    <div class="answer">{{ ans }}</div>
+    {% endif %} {% endfor %}
+  </div>
+  {% endfor %}
+
+      <a
+    href="{% url 'courses:lesson_detail' course.id lesson.id %}"
+    class="lesson-item"
+  >
+    <i class="fas fa-arrow-left"></i>
+    Back to lesson
+  </a>
+</div>
+{% endblock %}

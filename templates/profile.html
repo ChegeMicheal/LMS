@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% load static %} 
+ {% block title %}My Profile{% endblock %} 
+ {% block content %} 
+
+<div class="dashboard-container">
+  <h2 class="dashboard-title">My Profile</h2>
+  <p class="dashboard-subtitle">
+    Manage your account and track your learning progress.
+  </p>
+
+  <div class="dashboard-cards">
+    <!-- PERSONAL INFO -->
+    <div class="dashboard-card">
+      <h3>Personal Information</h3>
+      <p>
+        <strong>Full Name:</strong>
+        {{ user.first_name }} {{ user.last_name }}
+      </p>
+      <p>
+        <strong>Email:</strong>
+        {{ user.email }}
+      </p>
+      {% if user.profile.dob %}
+      <p>
+        <strong>Date of Birth:</strong>
+        {{ user.profile.dob }}
+      </p>
+      {% endif %} {% if user.profile.gender %}
+      <p>
+        <strong>Gender:</strong>
+        {{ user.profile.get_gender_display }}
+      </p>
+      {% endif %}
+    </div>
+
+    <!-- ENROLLED COURSES -->
+    <div class="dashboard-card">
+      <h3>My Courses</h3>
+      {% if enrolled_courses %}
+      <ul>
+        {% for enrollment in enrolled_courses %}
+        <li>
+          <a href="{% url 'courses:course_detail' enrollment.course.id %}">
+            {{ enrollment.course.title }}
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p>You are not enrolled in any courses yet.</p>
+      {% endif %}
+    </div>
+
+    <div class="dashboard-actions">
+      <a href="{% url 'accounts:change_password' %}" class="btn-secondary-1">
+        Change Password
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

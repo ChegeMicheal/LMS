@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Verify OTP{% endblock %}
+
+{% block content %}
+<div class="login-container">
+  <div class="login-card">
+    <h2>Enter OTP</h2>
+    <form method="post">
+      {% csrf_token %}
+      {{ form.non_field_errors }}
+      <div class="form-group">{{ form.otp.label_tag }} {{ form.otp }}</div>
+      <br>
+      <button type="submit" class="btn-login">Verify OTP</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

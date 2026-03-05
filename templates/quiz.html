@@ -1,0 +1,234 @@
+{% extends 'base.html' %}
+{% block title %}{{ quiz.title }}{% endblock %}
+
+{% block content %}
+<div class="quiz-container">
+
+    <div id="timeout-popup">Time's up! Submitting your quiz...</div>
+
+    <h2>{{ quiz.title }}</h2>
+    <p>{{ quiz.description }}</p>
+
+    <div class="quiz-timer">
+        Time Left: <span id="timer"></span>
+    </div>
+
+    <form method="post" action="{% url 'courses:submit_quiz' attempt_id=attempt.id %}">
+        {% csrf_token %}
+        <input type="hidden" name="timeout_submit" value="0">
+        <input type="hidden" name="auto_submitted" value="0">
+
+        <!-- SLICK NAVIGATION -->
+        <div class="slick-nav">
+            <span id="prevBtn" class="nav-control">&lt;</span>
+
+            <div class="question-navigation">
+                {% for q in questions %}
+                <span class="question-badge" data-index="{{ forloop.counter0 }}">
+                    {{ forloop.counter }}
+                </span>
+                {% endfor %}
+            </div>
+
+            <span id="nextBtn" class="nav-control">&gt;</span>
+        </div>
+
+        {% for q in questions %}
+        <div class="quiz-question" data-index="{{ forloop.counter0 }}" style="display:none;">
+            <p><strong>{{ forloop.counter }}. {{ q.question_text }}</strong></p>
+            {% for ans in q.answers %}
+            <label>
+                <input type="radio" name="question_{{ q.id }}" value="{{ ans }}"
+                    {% if q.selected_answer == ans %}checked{% endif %}>
+                {{ ans }}
+            </label><br>
+            {% endfor %}
+        </div>
+        {% endfor %}
+
+        <button type="submit" class="quiz-submit-btn" name="preview">
+            preview answers
+        </button>
+    </form>
+</div>
+{% endblock %}
+
+{% block media_js %}
+<style>
+.slick-nav{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    gap:10px;
+    margin-bottom:25px;
+    font-size:18px;
+}
+
+.nav-control{
+    cursor:pointer;
+    font-weight:bold;
+    padding:4px 8px;
+    user-select:none;
+}
+
+.nav-control:hover{
+    color:#2196f3;
+}
+
+.question-navigation{
+    display:flex;
+    gap:12px;
+}
+
+.question-badge{
+    cursor:pointer;
+    transition:0.2s;
+}
+
+.question-badge.active{
+    color:#2196f3;
+    font-weight:bold;
+}
+
+.question-badge.answered{
+    color:#4caf50;   /* ✅ answered green */
+}
+
+#timeout-popup{
+    display:none;
+    position:fixed;
+    top:40%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    background:#ff9800;
+    color:white;
+    padding:20px 30px;
+    border-radius:8px;
+    font-size:1.2rem;
+    opacity:0;
+    transition:opacity .5s ease;
+    z-index:9999;
+}
+
+.quiz-timer span.warning{
+    color:red;
+    font-weight:bold;
+}
+</style>
+
+<script>
+let timeLeft = {{ remaining_seconds }};
+let currentQuestion = 0;
+let isSubmitting = false;
+
+const questions = document.querySelectorAll(".quiz-question");
+const badges = document.querySelectorAll(".question-badge");
+const timerEl = document.getElementById("timer");
+const popup = document.getElementById("timeout-popup");
+const form = document.querySelector("form");
+
+const redirectUrl = "{% url 'courses:lesson_detail' course_id=attempt.quiz.lesson.course.id lesson_id=attempt.quiz.lesson.id %}";
+
+/* TIMER FORMAT */
+function formatTime(s){
+    let m=Math.floor(s/60);
+    let sec=s%60;
+    return `${m}:${sec.toString().padStart(2,'0')}`;
+}
+timerEl.textContent=formatTime(timeLeft);
+
+/* QUESTION SWITCH */
+function showQuestion(i){
+    questions.forEach(q=>q.style.display="none");
+    badges.forEach(b=>b.classList.remove("active"));
+
+    questions[i].style.display="block";
+    badges[i].classList.add("active");
+
+    currentQuestion=i;
+}
+showQuestion(0);
+
+document.getElementById("nextBtn").onclick=()=>{
+    if(currentQuestion<questions.length-1)
+        showQuestion(currentQuestion+1);
+};
+
+document.getElementById("prevBtn").onclick=()=>{
+    if(currentQuestion>0)
+        showQuestion(currentQuestion-1);
+};
+
+badges.forEach((b,i)=>{
+    b.onclick=()=>showQuestion(i);
+});
+
+/* ANSWER COLOR UPDATE */
+document.querySelectorAll("input[type=radio]").forEach(input=>{
+    input.addEventListener("change",()=>{
+        const q=input.closest(".quiz-question");
+        const index=q.dataset.index;
+        badges[index].classList.add("answered");
+    });
+});
+
+/* REAL TIMEOUT SUBMIT USING FETCH */
+function submitQuizTimeout() {
+    if(isSubmitting) return;
+    isSubmitting = true;
+
+    popup.style.display = "block";
+    popup.style.opacity = 1;
+
+    setTimeout(()=>{
+
+        // Collect answers manually
+        const answers = {};
+        document.querySelectorAll('.quiz-question').forEach(q=>{
+            const qid = q.dataset.index;
+            const selected = q.querySelector('input[type=radio]:checked');
+            if(selected){
+                answers[selected.name] = selected.value;
+            }
+        });
+
+        // Create form data
+        const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+        const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', csrfToken);
+        formData.append('timeout_submit', '1');
+        formData.append('auto_submitted', '1');
+
+        // Append answers manually
+        Object.keys(answers).forEach(key => formData.append(key, answers[key]));
+
+        // Send via fetch
+        fetch("{% url 'courses:submit_quiz' attempt_id=attempt.id %}", {
+            method: 'POST',
+            body: formData
+        })
+        .then(()=> window.location.href = redirectUrl)
+        .catch(()=> window.location.href = redirectUrl);
+
+    }, 2000);
+}
+
+/* TIMER */
+const interval = setInterval(() => {
+
+    if(timeLeft <= 0){
+        clearInterval(interval);
+        submitQuizTimeout();   // ✅ call the correct function
+        return;
+    }
+
+    if(timeLeft <= 10){
+        timerEl.classList.add("warning");
+    }
+
+    timeLeft--;
+    timerEl.textContent = formatTime(timeLeft);
+
+}, 1000);
+</script>
+{% endblock %}

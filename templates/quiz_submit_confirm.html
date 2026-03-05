@@ -1,0 +1,199 @@
+{% extends 'base.html' %}
+{% block title %}Confirm Submission{% endblock %}
+
+{% block content %}
+<div class="quiz-container">
+    <div id="timeout-popup">Time's up! Submitting your quiz for grading...</div>
+
+    <div class="quiz-timer">
+        Time Left: <span id="timer"></span>
+    </div>
+
+    <h2>Confirm Submission</h2>
+    <p>Review your answers below.</p>
+
+    <form method="post" id="quiz-form">
+        {% csrf_token %}
+        {% for q in questions %}
+        <div class="quiz-question">
+            <p><strong>{{ forloop.counter }}. {{ q.question_text }}</strong></p>
+            {% for ans in q.answers %}
+            <label>
+                <input type="radio" name="question_{{ q.id }}" value="{{ ans }}"
+                       {% if q.selected_answer == ans %}checked{% endif %} disabled>
+                {{ ans }}
+            </label><br>
+            {% endfor %}
+        </div>
+        {% endfor %}
+
+        <div class="submission-buttons">
+            <button type="submit" name="confirm_submit" class="btn-secondary-1">
+                Confirm & Grade
+            </button>
+        </div>
+    </form>
+
+    <div style="margin-top: 1rem;">
+        <a href="{% url 'courses:start_quiz' lesson_id=attempt.quiz.lesson.id %}?attempt_id={{ attempt.id }}" 
+           class="btn-primary"
+           id="edit-answers-btn">
+            Edit Answers
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block media_js %}
+
+<style>
+@keyframes shake {
+  0% { transform: translateX(0); }
+  20% { transform: translateX(-10px); }
+  40% { transform: translateX(10px); }
+  60% { transform: translateX(-10px); }
+  80% { transform: translateX(10px); }
+  100% { transform: translateX(0); }
+}
+.shake {
+  animation: shake 0.5s;
+}
+
+.quiz-timer span#timer {
+    font-weight: bold;
+    color: #000;
+    transition: color 0.3s ease;
+}
+.quiz-timer span#timer.warning {
+    color: #f44336;
+    animation: pulse 1s infinite;
+}
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+/* Popup */
+#timeout-popup {
+    display: none;
+    position: fixed;
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #ff9800;
+    color: white;
+    padding: 20px 30px;
+    border-radius: 8px;
+    font-size: 1.2rem;
+    text-align: center;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    z-index: 9999;
+}
+</style>
+
+<script>
+let timeLeft = {{ remaining_seconds }};
+const timerEl = document.getElementById("timer");
+const form = document.getElementById("quiz-form");
+const popup = document.getElementById("timeout-popup");
+const editBtn = document.getElementById("edit-answers-btn");
+
+let isSubmitting = false;
+
+editBtn.addEventListener("click", function(){
+    isSubmitting = true;
+});
+
+const redirectUrl = "{% url 'courses:lesson_detail' course_id=attempt.quiz.lesson.course.id lesson_id=attempt.quiz.lesson.id %}";
+
+function formatTime(s){
+    let m = Math.floor(s/60);
+    let sec = s % 60;
+    return `${m}:${sec.toString().padStart(2,'0')}`;
+}
+
+timerEl.textContent = formatTime(timeLeft);
+
+const interval = setInterval(()=>{
+    if(timeLeft <= 0){
+        clearInterval(interval);
+
+        if(!isSubmitting){
+            isSubmitting = true;
+
+            popup.style.display = "block";
+            popup.style.opacity = 1;
+
+            setTimeout(()=>{
+                popup.style.opacity = 0;
+                setTimeout(()=>{
+                    popup.style.display = "none";
+
+                    document.querySelectorAll('input[type=radio]').forEach(input=>{
+                        input.disabled = false;
+                    });
+
+                    const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+                    const formData = new FormData(form);
+                    formData.append('timeout_submit', '1');
+
+                    fetch("{% url 'courses:submit_quiz' attempt_id=attempt.id %}", {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': csrfToken },
+                        body: formData
+                    })
+                    .then(()=>{ window.location.href = redirectUrl; })
+                    .catch(()=>{ alert("Error submitting quiz."); });
+
+                }, 500);
+            }, 5000);
+        }
+        return;
+    }
+
+    if(timeLeft <= 10){
+        timerEl.classList.add("warning");
+    }
+
+    timeLeft--;
+    timerEl.textContent = formatTime(timeLeft);
+},1000);
+
+window.addEventListener("beforeunload", ()=>{
+    if(!isSubmitting){
+        isSubmitting = true;
+        document.querySelectorAll('input[type=radio]').forEach(input=>{
+            input.disabled = false;
+        });
+        const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+        const formData = new FormData(form);
+        formData.append('timeout_submit', '1');
+        navigator.sendBeacon("{% url 'courses:submit_quiz' attempt_id=attempt.id %}", formData);
+    }
+});
+
+const bustedAudio = new Audio('https://www.soundjay.com/human/sounds/fail-buzzer-01.mp3');
+let tabSwitchCount = 0;
+const MAX_TAB_SWITCH = 3;
+
+document.addEventListener("visibilitychange", function(){
+    if(document.hidden && !isSubmitting){
+        tabSwitchCount++;
+        if(tabSwitchCount >= MAX_TAB_SWITCH){
+            alert("Busted! Submitting quiz due to tab switches.");
+            timerEl.classList.add("shake");
+            bustedAudio.play();
+            setTimeout(()=>{
+                isSubmitting = true;
+                form.submit();
+            }, 1000);
+        } else {
+            alert(`Warning: Tab switch detected (${tabSwitchCount}/${MAX_TAB_SWITCH})`);
+        }
+    }
+});
+</script>
+{% endblock %}
