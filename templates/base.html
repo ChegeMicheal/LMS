@@ -1,0 +1,154 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}LMS{% endblock %}</title>
+
+  <!-- Favicon -->
+  <link rel="icon" href="{% static 'images/lms_logo.jpg' %}" sizes="16x16" type="image/png" />
+  <link rel="icon" href="{% static 'images/lms_logo.jpg' %}" sizes="32x32" type="image/png" />
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+</head>
+<body>
+
+<!-- ================= HEADER ================= -->
+<header class="site-header">
+  <div class="container header-container">
+    <!-- Logo -->
+    <div class="logo">
+      <img src="{% static 'images/lms_logo.jpg' %}" alt="LMS Logo" class="logo-img" id="logoTrigger" />
+    </div>
+
+    <!-- Logo Modal -->
+    <div class="logo-modal-overlay" id="logoModal">
+      <img src="{% static 'images/lms_logo.jpg' %}" alt="LMS Logo" />
+    </div>
+
+    <!-- Navigation -->
+    <nav class="site-nav" id="site-nav">
+      <a href="{% url 'home' %}">Home</a>
+      <a href="{% url 'courses:course_list' %}">Courses</a>
+      {% if request.user.is_staff %}
+        <a href="/admin/">Admin</a>
+      {% endif %}
+
+      <!-- User Dropdown -->
+      <div class="user-dropdown">
+        <div class="user-icon" id="userMenuToggle">
+          <i class="fas fa-user-circle"></i>
+        </div>
+        <div class="dropdown-menu" id="userDropdown">
+          {% if request.user.is_authenticated %}
+            <span class="username">
+              Hi, {{ request.user.first_name|default:request.user.username }}
+            </span>
+            <a href="{% url 'accounts:my_profile' %}">My Profile</a>
+            <form method="post" action="{% url 'logout' %}">
+              {% csrf_token %}
+              <button type="submit" class="logout-btn">Logout</button>
+            </form>
+          {% else %}
+            <a href="{% url 'login' %}">Login</a>
+          {% endif %}
+        </div>
+      </div>
+    </nav>
+
+    <!-- Mobile Hamburger -->
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+  </div>
+</header>
+
+<!-- ================= FLASH MESSAGES ================= -->
+{% if messages %}
+<div class="flash-messages">
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}">
+      {{ message }}
+      <button class="close-btn" onclick="this.parentElement.remove()">×</button>
+    </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- ================= MAIN CONTENT ================= -->
+<main id="blur-target">
+  {% block content %}{% endblock %}
+</main>
+
+<!-- ================= FOOTER ================= -->
+<footer class="site-footer">
+  <div class="container footer-container">
+    <p>Follow us:</p>
+    <div class="social-links">
+      <a href="#" target="_blank"><i class="fab fa-linkedin"></i>LinkedIn</a>
+      <a href="#" target="_blank"><i class="fab fa-instagram"></i>Instagram</a>
+      <a href="#" target="_blank"><i class="fab fa-facebook"></i>Facebook</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>&copy; {% now "Y" %} LMS. All Rights Reserved.</p>
+  </div>
+</footer>
+
+<!-- ================= GLOBAL SCRIPT ================= -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+  // Hamburger
+  const hamburger = document.getElementById("hamburger");
+  const nav = document.getElementById("site-nav");
+  if(hamburger && nav){
+    hamburger.addEventListener("click", () => {
+      nav.classList.toggle("nav-active");
+      hamburger.classList.toggle("open");
+    });
+  }
+
+  // Flash auto-remove
+  setTimeout(() => document.querySelectorAll(".flash-messages .alert").forEach(a => a.remove()), 5000);
+
+  // User Dropdown
+  const userToggle = document.getElementById("userMenuToggle");
+  const userDropdown = document.getElementById("userDropdown");
+  if(userToggle && userDropdown){
+    userToggle.addEventListener("click", e=>{
+      e.stopPropagation();
+      userDropdown.classList.toggle("active");
+      userToggle.classList.toggle("active");
+    });
+    document.addEventListener("click", e=>{
+      if(!userDropdown.contains(e.target) && !userToggle.contains(e.target)){
+        userDropdown.classList.remove("active");
+        userToggle.classList.remove("active");
+      }
+    });
+  }
+
+  // Logo Modal
+  const logoTrigger = document.getElementById("logoTrigger");
+  const logoModal = document.getElementById("logoModal");
+  if(logoTrigger && logoModal){
+    logoTrigger.addEventListener("click", e=>{
+      e.stopPropagation();
+      logoModal.classList.add("active");
+    });
+    logoModal.addEventListener("click", ()=> logoModal.classList.remove("active"));
+  }
+
+});
+</script>
+
+{% block media_js %}{% endblock %}
+
+</body>
+</html>

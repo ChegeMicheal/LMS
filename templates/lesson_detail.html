@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+{% block title %}{{ lesson.title }}{% endblock %}
+
+{% block content %}
+<section class="courses-section section-spacing">
+  <!-- BREADCRUMB HEADER -->
+<div class="lesson-breadcrumb">
+  <a href="{% url 'courses:course_detail' course.id %}" class="breadcrumb-link">
+    {{ course.title }}
+  </a>
+  <span class="breadcrumb-separator"> &gt; </span>
+  <span class="breadcrumb-current">{{ lesson.title }}</span>
+  <!-- Optional: add some spacing -->
+<div class="course-card">
+  <div class="course-info">
+    <p>{{ lesson.description }}</p>
+  </div>
+</div>
+</div>
+
+
+  <div class="dashboard-container">
+
+    <!-- ================= YOUTUBE VIDEOS ================= -->
+    {% if youtube_videos %}
+    <div class="lessons-section">
+      <h3 class="section-title">YouTube Videos</h3>
+      {% for media in youtube_videos %}
+        <div class="lesson-media-block">
+          <iframe width="640" height="360" src="{{ media.youtube_embed_url }}" frameborder="0" allowfullscreen></iframe>
+        </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- ================= UPLOADED VIDEOS ================= -->
+    {% if uploaded_videos %}
+    <div class="lessons-section">
+      <h3 class="section-title">Uploaded Videos</h3>
+      {% for media in uploaded_videos %}
+        <div class="lesson-media-block">
+          <div class="video-controls">
+            <button class="video-resize-btn">Expand</button>
+          </div>
+          <video controls controlsList="nodownload noremoteplayback" preload="metadata" oncontextmenu="return false">
+            <source src="{{ media.file_url }}" type="video/mp4">
+          </video>
+        </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- ================= PDF FILES ================= -->
+    {% if pdf_files %}
+    <div class="lessons-section">
+      <h3 class="section-title">Documents (PDFs)</h3>
+      {% for media in pdf_files %}
+        <div class="lesson-media-block pdf-block">
+          <a href="{{ media.external_url|default:media.file_url }}" target="_blank" class="pdf-link">
+            <span class="pdf-icon">📄</span>
+            <span class="pdf-name">{{ media.display_name }}</span>
+          </a>
+        </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- ================= IMAGES ================= -->
+    {% if images %}
+    <div class="lessons-section">
+      <h3 class="section-title">Images</h3>
+      {% for media in images %}
+        <div class="lesson-media-block">
+          <img src="{{ media.external_url|default:media.file_url }}" alt="Lesson Image" class="image-zoom-trigger" data-zoom="img-zoom-{{ media.id }}" draggable="false" oncontextmenu="return false">
+          <div id="img-zoom-{{ media.id }}" class="img-zoom-overlay">
+            <img src="{{ media.external_url|default:media.file_url }}" alt="Lesson Image" oncontextmenu="return false">
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+<!-- ===================== QUIZ ===================== -->
+<div class="lessons-section fade-in">
+  <h3 class="section-title">Quiz</h3>
+
+  {% if quizzes_with_status %}
+    <div class="quizzes-list">
+      <ul>
+        {% for item in quizzes_with_status %}
+        <li>
+          <a href="{% url 'courses:start_quiz' lesson.id %}"
+             class="quiz-item {{ item.status_class }}">
+             
+            <span class="quiz-title">
+              {{ item.quiz.title }}
+            </span>
+
+            <span class="quiz-meta">
+              {{ item.quiz.duration_minutes }} min
+            </span>
+
+            <span class="quiz-status">
+              {{ item.status }}
+            </span>
+
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% else %}
+    <p class="empty-state">No quiz available yet.</p>
+  {% endif %}
+</div>
+
+
+
+
+
+  </div>
+</section>
+{% endblock %}
+
+{% block media_js %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+  const toggleBlur = (state, type = "video") => {
+    if(type === "video") {
+      document.body.classList.toggle("video-expanded", state);
+    } else if(type === "image") {
+      document.body.classList.toggle("image-expanded", state);
+    }
+  };
+
+  // VIDEO FULLSCREEN
+  document.querySelectorAll(".video-resize-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const wrapper = btn.closest(".lesson-media-wrapper");
+      if(!wrapper) return;
+      const isFullscreen = wrapper.classList.toggle("fullscreen");
+      btn.textContent = isFullscreen ? "Minimize" : "Expand";
+
+      if(isFullscreen){
+        document.body.appendChild(wrapper);
+      } else {
+        const parent = wrapper.closest(".lesson-media-block") || document.querySelector(".lessons-section");
+        parent.appendChild(wrapper);
+      }
+
+      toggleBlur(isFullscreen, "video");
+    });
+  });
+
+  // IMAGE ZOOM
+  document.querySelectorAll(".image-zoom-trigger").forEach(img => {
+    img.addEventListener("click", () => {
+      const overlay = document.getElementById(img.dataset.zoom);
+      if(!overlay) return;
+      overlay.classList.add("active");
+      overlay.style.zIndex = 10000;
+      toggleBlur(true, "image");
+    });
+  });
+
+  document.querySelectorAll(".img-zoom-overlay").forEach(overlay => {
+    overlay.addEventListener("click", () => {
+      overlay.classList.remove("active");
+      toggleBlur(false, "image");
+    });
+  });
+
+});
+</script>
+{% endblock %}
