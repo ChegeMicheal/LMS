@@ -82,7 +82,10 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
+<<<<<<< HEAD
 """
+=======
+>>>>>>> 4749e752616cfd19b9936111c11512e6b21e659d
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -93,6 +96,7 @@ DATABASES = {
         'PORT': os.getenv('DB_PORT'),
     }
 }
+<<<<<<< HEAD
 """
 
 DATABASES = {
@@ -102,6 +106,8 @@ DATABASES = {
     }
 }
 
+=======
+>>>>>>> 4749e752616cfd19b9936111c11512e6b21e659d
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
